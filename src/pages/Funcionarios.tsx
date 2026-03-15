@@ -14,7 +14,7 @@ const item = {
 };
 
 const Funcionarios = () => {
-  const { employees, deleteEmployee } = useEmployees();
+  const { employees, deleteEmployee, loading, error } = useEmployees();
   const [search, setSearch] = useState('');
   const [cargoFilter, setCargoFilter] = useState('');
 
@@ -26,9 +26,10 @@ const Funcionarios = () => {
     return matchSearch && matchCargo;
   });
 
-  const handleDelete = (id: string, nome: string) => {
+  const handleDelete = async (id: number, nome: string) => {
     if (window.confirm(`Deseja excluir o funcionário "${nome}"?`)) {
-      deleteEmployee(id);
+      const res = await deleteEmployee(id);
+      if (!res.success) alert(res.error || 'Falha ao excluir funcionário');
     }
   };
 
@@ -74,61 +75,67 @@ const Funcionarios = () => {
 
       {/* Table */}
       <motion.div variants={item} className="bg-card border border-border rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border">
-              {['Nome', 'E-mail', 'CPF', 'Cargo', 'Data de Cadastro', 'Ações'].map(h => (
-                <th key={h} className="text-left px-6 py-3 text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground text-sm">
-                  Nenhum funcionário encontrado.
-                </td>
+        {loading ? (
+          <div className="p-6 text-center">Carregando funcionários...</div>
+        ) : error ? (
+          <div className="p-6 text-center text-destructive">{error}</div>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border">
+                {['Nome', 'E-mail', 'CPF', 'Cargo', 'Data de Cadastro', 'Ações'].map(h => (
+                  <th key={h} className="text-left px-6 py-3 text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
+                    {h}
+                  </th>
+                ))}
               </tr>
-            ) : (
-              filtered.map((emp, i) => (
-                <tr key={emp.id} className={`hover:bg-foreground/5 transition-colors ${i < filtered.length - 1 ? 'border-b border-border/50' : ''}`}>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-display font-semibold text-xs">
-                        {emp.nome.split(' ').map(n => n[0]).slice(0, 2).join('')}
-                      </div>
-                      <span className="font-medium text-sm">{emp.nome}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-muted-foreground">{emp.email}</td>
-                  <td className="px-6 py-4 text-sm text-muted-foreground font-mono-data">{emp.cpf}</td>
-                  <td className="px-6 py-4 text-sm text-muted-foreground">{emp.cargo}</td>
-                  <td className="px-6 py-4 text-sm text-muted-foreground font-mono-data">{emp.dataCadastro}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        to={`/funcionarios/editar/${emp.id}`}
-                        className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                        title="Editar"
-                      >
-                        <Pencil size={16} />
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(emp.id, emp.nome)}
-                        className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        title="Excluir"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground text-sm">
+                    Nenhum funcionário encontrado.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filtered.map((emp, i) => (
+                  <tr key={emp.id} className={`hover:bg-foreground/5 transition-colors ${i < filtered.length - 1 ? 'border-b border-border/50' : ''}`}>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-display font-semibold text-xs">
+                          {emp.nome.split(' ').map(n => n[0]).slice(0, 2).join('')}
+                        </div>
+                        <span className="font-medium text-sm">{emp.nome}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground">{emp.email}</td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground font-mono-data">{emp.cpf}</td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground">{emp.cargo}</td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground font-mono-data">{emp.dataCadastro}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to={`/funcionarios/editar/${emp.id}`}
+                          className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                          title="Editar"
+                        >
+                          <Pencil size={16} />
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(emp.id, emp.nome)}
+                          className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
       </motion.div>
     </motion.div>
   );

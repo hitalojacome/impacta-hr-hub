@@ -1,7 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
-import logoImpacta from '@/assets/logo-impacta.png';
 
 const navItems = [
   { title: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -15,7 +14,6 @@ const AppSidebar = () => {
     <aside className="fixed left-0 top-0 h-screen w-72 bg-card border-r border-border flex flex-col z-50">
       {/* Logo area */}
       <div className="px-6 py-8 border-b border-border">
-        <img src={logoImpacta} alt="Impacta" className="h-8 mb-3" />
         <div>
           <h1 className="font-display text-lg font-semibold text-foreground tracking-tight">Impacta RH</h1>
           <p className="text-xs text-muted-foreground">Portal Administrativo de Funcionários</p>

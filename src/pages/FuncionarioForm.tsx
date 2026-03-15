@@ -34,24 +34,27 @@ const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email
 
 const FuncionarioForm = () => {
   const { id } = useParams();
+  const idNum = id ? Number(id) : undefined;
   const navigate = useNavigate();
-  const { addEmployee, updateEmployee, getEmployee } = useEmployees();
+  const { addEmployee, updateEmployee, getEmployee, loading } = useEmployees();
   const isEditing = Boolean(id);
 
   const [form, setForm] = useState<FormData>({ nome: '', email: '', cpf: '', cargo: '' });
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (id) {
-      const emp = getEmployee(id);
+    if (idNum !== undefined) {
+      const emp = getEmployee(idNum);
       if (emp) {
         setForm({ nome: emp.nome, email: emp.email, cpf: emp.cpf, cargo: emp.cargo });
-      } else {
+      } else if (!loading) {
+        // not found, go back
         navigate('/funcionarios');
       }
     }
-  }, [id, getEmployee, navigate]);
+  }, [idNum, getEmployee, navigate, loading]);
 
   const validate = (): FormErrors => {
     const errs: FormErrors = {};
@@ -64,7 +67,7 @@ const FuncionarioForm = () => {
     return errs;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) {
@@ -73,16 +76,22 @@ const FuncionarioForm = () => {
       return;
     }
 
-    const result = isEditing
-      ? updateEmployee(id!, form)
-      : addEmployee(form);
+    setSubmitting(true);
+    try {
+      const result = isEditing && idNum !== undefined
+        ? await updateEmployee(idNum, form)
+        : await addEmployee(form);
 
-    if (!result.success) {
-      setErrors({ server: result.error });
-      return;
+      if (!result.success) {
+        setErrors({ server: result.error });
+        setSubmitting(false);
+        return;
+      }
+
+      navigate('/funcionarios');
+    } finally {
+      setSubmitting(false);
     }
-
-    navigate('/funcionarios');
   };
 
   const handleChange = (field: keyof FormData, value: string) => {
@@ -143,6 +152,7 @@ const FuncionarioForm = () => {
               value={form.nome}
               onChange={e => handleChange('nome', e.target.value)}
               onBlur={() => handleBlur('nome')}
+              disabled={loading || submitting}
             />
             {errors.nome && touched.nome && <p className="text-xs text-destructive font-medium">{errors.nome}</p>}
           </div>
@@ -156,6 +166,7 @@ const FuncionarioForm = () => {
               value={form.email}
               onChange={e => handleChange('email', e.target.value)}
               onBlur={() => handleBlur('email')}
+              disabled={loading || submitting}
             />
             {errors.email && touched.email && <p className="text-xs text-destructive font-medium">{errors.email}</p>}
           </div>
@@ -168,6 +179,7 @@ const FuncionarioForm = () => {
               value={form.cpf}
               onChange={e => handleChange('cpf', e.target.value)}
               onBlur={() => handleBlur('cpf')}
+              disabled={loading || submitting}
             />
             {errors.cpf && touched.cpf && <p className="text-xs text-destructive font-medium">{errors.cpf}</p>}
           </div>
@@ -179,6 +191,7 @@ const FuncionarioForm = () => {
               value={form.cargo}
               onChange={e => handleChange('cargo', e.target.value)}
               onBlur={() => handleBlur('cargo')}
+              disabled={loading || submitting}
             >
               <option value="">Selecione um cargo</option>
               {cargos.map(c => (
@@ -191,10 +204,11 @@ const FuncionarioForm = () => {
           <div className="flex items-center gap-4 pt-4">
             <button
               type="submit"
+              disabled={loading || submitting}
               className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-lg font-medium text-sm glow-blue hover:brightness-110 transition-all active:scale-[0.98]"
             >
               <Save size={16} />
-              Salvar Alterações
+              {submitting ? 'Salvando...' : 'Salvar Alterações'}
             </button>
             <button
               type="button"
